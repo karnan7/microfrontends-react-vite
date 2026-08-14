@@ -1,0 +1,1 @@
+import{n as e,t}from"./assets/virtual_mf-REMOTE_ENTRY_ID___mfe_internal__cart__remoteEntry_js-DON9MYJm.js";export{t as get,e as init};
