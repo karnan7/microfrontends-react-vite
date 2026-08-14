@@ -49,7 +49,7 @@ function CatalogRoute() {
     <RemoteSlot
       origin="products"
       module="products/ProductGrid"
-      url="http://localhost:5001/remoteEntry.js"
+      url={__PRODUCTS_URL__}
     >
       <ProductGrid onAdd={add} inCart={inCart} />
     </RemoteSlot>
@@ -64,7 +64,7 @@ function CartRoute() {
     <RemoteSlot
       origin="cart"
       module="cart/CartPanel"
-      url="http://localhost:5002/remoteEntry.js"
+      url={__CART_URL__}
     >
       <CartPanel
         items={lines}

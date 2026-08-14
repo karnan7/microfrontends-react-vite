@@ -1,0 +1,64 @@
+name: cart
+
+# Path filter is what makes this a microfrontend pipeline rather than a
+# monorepo build: a change under cart/ deploys cart and nothing else.
+# host and products keep serving whatever they last published.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cart/**"
+      - ".github/workflows/cart.yml"
+  pull_request:
+    paths:
+      - "cart/**"
+      - ".github/workflows/cart.yml"
+  workflow_dispatch:
+
+# All three apps publish to the same gh-pages branch, so their deploys must
+# not overlap. cancel-in-progress stays false — every deploy has to land.
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: cart
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: cart/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - name: Build
+        # Baked into the bundle: every asset URL in remoteEntry.js is
+        # prefixed with this, so the host resolves them correctly no matter
+        # which page the remote is mounted into.
+        env:
+          VITE_PUBLIC_URL: /microfrontends-react-vite/cart/
+        run: npm run build
+
+      - name: Deploy
+        if: github.event_name != 'pull_request'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./cart/dist
+          destination_dir: cart
+          # Leaves host/ and products/ untouched. It also leaves this remote's
+          # previous hashed chunks in place, which is deliberate — a browser
+          # holding an older remoteEntry can still fetch what it references.
+          keep_files: true

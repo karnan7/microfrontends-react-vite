@@ -11,7 +11,7 @@ import App from "./App.tsx";
 // have to agree with the shell on a router version.
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <CartProvider>
         <App />
       </CartProvider>
