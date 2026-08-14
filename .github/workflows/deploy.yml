@@ -1,0 +1,222 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# All three apps publish into one gh-pages branch, so their pushes to it must
+# not overlap. This group only guards whole runs against each other; the jobs
+# inside are serialized by `needs` below.
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
+jobs:
+  # Which apps actually changed. This is what makes the pipeline a set of
+  # independent deployments rather than one monolithic build: an app whose
+  # files are untouched is skipped entirely and keeps serving what it last
+  # published.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      host: ${{ steps.filter.outputs.host }}
+      products: ${{ steps.filter.outputs.products }}
+      cart: ${{ steps.filter.outputs.cart }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          # A manual run, or a push whose starting point we can't resolve
+          # (first commit, force push), rebuilds everything rather than
+          # guessing at a diff.
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            changed=ALL
+          elif [ "$EVENT" = "pull_request" ]; then
+            changed=$(git diff --name-only "$BASE" "$HEAD")
+          elif [ -n "$BEFORE" ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            changed=$(git diff --name-only "$BEFORE" "$HEAD")
+          else
+            changed=ALL
+          fi
+
+          echo "changed paths:"
+          echo "$changed"
+
+          for app in host products cart; do
+            # A workflow edit rebuilds all three — the pipeline itself is a
+            # shared input to every app's build.
+            if [ "$changed" = ALL ] \
+              || echo "$changed" | grep -qE "^($app/|\.github/workflows/)"; then
+              echo "$app=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "$app=false" >> "$GITHUB_OUTPUT"
+            fi
+          done
+
+          cat "$GITHUB_OUTPUT"
+
+  # Remotes deploy before the host. A new remote is backward-compatible with
+  # the host already live in browsers; a host referencing a remote that isn't
+  # up yet is a 404 in the slot.
+  products:
+    needs: changes
+    if: ${{ needs.changes.outputs.products == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: products
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: products/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - name: Build
+        # Baked into the bundle. index.html uses it when the remote is opened
+        # standalone; the federated chunks import each other relative to
+        # remoteEntry.js, so they resolve correctly wherever they're mounted.
+        env:
+          VITE_PUBLIC_URL: /microfrontends-react-vite/products/
+        run: npm run build
+
+      - name: Deploy
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./products/dist
+          destination_dir: products
+          # Leaves host/ and cart/ untouched. It also keeps this remote's
+          # previous hashed chunks, which is deliberate — a browser holding an
+          # older remoteEntry can still fetch what it references.
+          keep_files: true
+
+  cart:
+    # Depends on products only to serialize the push to gh-pages, not because
+    # the two are related. always() means a products failure doesn't block
+    # cart's deploy — that independence is the point.
+    needs: [changes, products]
+    if: ${{ always() && needs.changes.outputs.cart == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: cart
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: cart/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - name: Build
+        env:
+          VITE_PUBLIC_URL: /microfrontends-react-vite/cart/
+        run: npm run build
+
+      - name: Deploy
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./cart/dist
+          destination_dir: cart
+          keep_files: true
+
+  host:
+    needs: [changes, products, cart]
+    if: ${{ always() && needs.changes.outputs.host == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: host
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: host/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - name: Build
+        env:
+          # Where this app is served from — read back at runtime as
+          # import.meta.env.BASE_URL for the router's basename.
+          VITE_BASE_PATH: /microfrontends-react-vite/host/
+          # Resolved into remoteEntry URLs at build time. Changing these is a
+          # host deploy; changing what they point at is not.
+          VITE_PRODUCTS_URL: /microfrontends-react-vite/products
+          VITE_CART_URL: /microfrontends-react-vite/cart
+        run: npm run build
+
+      - name: SPA fallback for deep links
+        # /host/catalog is a client route with no file behind it. Pages serves
+        # 404.html for unmatched paths, so make that the app itself.
+        run: cp dist/index.html dist/404.html
+
+      - name: Deploy
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./host/dist
+          destination_dir: host
+          keep_files: true
+
+      - name: Build root landing redirect
+        if: ${{ github.event_name != 'pull_request' }}
+        working-directory: .
+        # The remotes have no page of their own worth visiting, so the site
+        # root forwards to the shell.
+        run: |
+          mkdir -p root-redirect
+          cat > root-redirect/index.html <<'HTML'
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>microfrontends-react-vite</title>
+          <meta http-equiv="refresh" content="0; url=./host/">
+          <p><a href="./host/">Continue to the host shell</a></p>
+          HTML
+
+      - name: Deploy root landing redirect
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./root-redirect
+          keep_files: true
