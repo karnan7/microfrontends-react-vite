@@ -1,0 +1,370 @@
+/* Host shell chrome. Nothing here styles remote content — remotes ship
+   their own CSS. The only shared contract is the token layer. */
+
+.shell {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- top bar ---------------------------------------------------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 var(--gutter);
+  height: 56px;
+  border-bottom: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--paper) 86%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.brand__mark {
+  width: 13px;
+  height: 13px;
+  border-radius: 2px;
+  background: var(--ink);
+  /* quartered square — a shell made of parts */
+  clip-path: polygon(
+    0 0,
+    45% 0,
+    45% 45%,
+    0 45%,
+    0 0,
+    55% 0,
+    100% 0,
+    100% 45%,
+    55% 45%,
+    55% 0,
+    55% 55%,
+    100% 55%,
+    100% 100%,
+    55% 100%,
+    55% 55%,
+    45% 55%,
+    45% 100%,
+    0 100%,
+    0 55%,
+    45% 55%
+  );
+}
+
+.brand__name {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.brand__sep {
+  width: 1px;
+  height: 14px;
+  background: var(--rule-strong);
+}
+
+/* --- tabs ------------------------------------------------------- */
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+
+/* NavLink renders an <a>, so text-decoration has to be reset here */
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--r);
+  background: none;
+  color: var(--ink-3);
+  font-size: 13.5px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s var(--ease);
+}
+
+.tab:hover {
+  color: var(--ink-2);
+}
+
+.tab[aria-current='page'] {
+  color: var(--ink);
+}
+
+/* the active tab is underscored in the colour of the remote it mounts */
+.tab[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -19px;
+  height: 2px;
+  background: var(--ink);
+}
+
+.tab[data-serves='products'][aria-current='page']::after {
+  background: var(--org-products);
+}
+.tab[data-serves='cart'][aria-current='page']::after {
+  background: var(--org-cart);
+}
+
+.tab__badge {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.topbar__actions {
+  display: flex;
+  gap: 2px;
+}
+
+.topbar__actions .btn[aria-pressed='true'] {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+/* --- main / remote slots ---------------------------------------- */
+
+.shell__main {
+  flex: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px var(--gutter) 80px;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.slot__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--rule);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.slot__id {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink-2);
+}
+
+.slot__id .mono {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.slot[data-slot='products'] .slot__id .dot {
+  background: var(--org-products);
+}
+.slot[data-slot='cart'] .slot__id .dot {
+  background: var(--org-cart);
+}
+
+.slot__url {
+  flex: 1;
+  font-size: 11px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slot__status {
+  padding: 2px 6px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+
+/* --- remote loading / failed states ----------------------------- */
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 8px 0 20px;
+}
+
+.skeleton__bar,
+.skeleton__tile {
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 0%,
+    var(--rule) 50%,
+    var(--surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: sweep 1.4s linear infinite;
+}
+
+.skeleton__bar--head {
+  width: 240px;
+  height: 30px;
+}
+
+.skeleton__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  gap: 1px;
+}
+
+.skeleton__tile {
+  height: 244px;
+  border-radius: 0;
+}
+
+@keyframes sweep {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.slot__down {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 28px;
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+.slot__down-why {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.slot__down-err {
+  width: 100%;
+  margin: 4px 0 6px;
+  padding: 10px 12px;
+  border-radius: 2px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.notfound {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 64px 0;
+}
+
+.notfound p:last-child {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+/* --- runtime bar ------------------------------------------------ */
+
+.runtime {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px var(--gutter);
+  border-top: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+.runtime__apps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  flex: 1;
+}
+
+.runtime__app {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.runtime__app[data-app='host'] .dot {
+  background: var(--org-host);
+}
+.runtime__app[data-app='products'] .dot {
+  background: var(--org-products);
+}
+.runtime__app[data-app='cart'] .dot {
+  background: var(--org-cart);
+}
+
+.runtime__name {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.runtime__port,
+.runtime__exposes {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.runtime__note {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    gap: 14px;
+  }
+  .brand__sep,
+  .brand .label {
+    display: none;
+  }
+  .runtime {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .runtime__exposes {
+    display: none;
+  }
+}

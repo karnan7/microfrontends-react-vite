@@ -1,0 +1,207 @@
+.pg {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.pg__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.pg__head h1 {
+  margin-top: 8px;
+}
+
+.pg__count {
+  font-size: 12px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* --- filters ---------------------------------------------------- */
+
+.pg__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 5px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 100px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition:
+    color 0.15s var(--ease),
+    border-color 0.15s var(--ease),
+    background 0.15s var(--ease);
+}
+
+.chip:hover {
+  border-color: var(--rule-strong);
+  color: var(--ink);
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+/* --- grid ------------------------------------------------------- */
+
+.pg__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  gap: 1px;
+  margin: 0;
+  padding: 1px;
+  list-style: none;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+/* hairline grid: cards sit on a 1px background that shows through */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  padding: 16px 16px 14px;
+  transition: background 0.2s var(--ease);
+}
+
+.card:hover {
+  background: var(--surface-2);
+}
+
+.card__swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 128px;
+  margin-bottom: 14px;
+  border-radius: 2px;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      120% 110% at 28% 18%,
+      hsl(var(--tone) 42% 88%) 0%,
+      hsl(var(--tone) 30% 74%) 48%,
+      hsl(var(--tone) 22% 58%) 100%
+    ),
+    var(--surface-2);
+}
+
+:root[data-theme='dark'] .card__swatch {
+  background: radial-gradient(
+    120% 110% at 28% 18%,
+    hsl(var(--tone) 26% 40%) 0%,
+    hsl(var(--tone) 22% 28%) 48%,
+    hsl(var(--tone) 18% 18%) 100%
+  );
+}
+
+/* fine diagonal texture so the swatch reads as material, not a blob */
+.card__swatch::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgb(255 255 255 / 0.14) 0 1px,
+    transparent 1px 7px
+  );
+}
+
+.card__mark {
+  position: relative;
+  font-family: var(--sans);
+  font-size: 46px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  color: rgb(255 255 255 / 0.72);
+  mix-blend-mode: soft-light;
+}
+
+.card__sku {
+  position: absolute;
+  right: 8px;
+  bottom: 7px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: rgb(255 255 255 / 0.75);
+}
+
+.card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.card__maker {
+  font-size: 9px;
+}
+
+.card__note {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+.card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+.card__price {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.card__stock {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  font: 500 9px/1 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.card__stock--low .dot {
+  background: var(--warn);
+}
+
+.pg__empty {
+  padding: 40px 0;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+@media (max-width: 560px) {
+  .pg__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}

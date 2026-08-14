@@ -1,0 +1,271 @@
+/* ---------------------------------------------------------------
+   Design system — this file is identical in host/, products/, cart/.
+   In a real setup it would ship as a versioned package (@mfe/design)
+   consumed by every app. Duplicated here so each app stays runnable
+   on its own, which is the whole point of a microfrontend.
+   --------------------------------------------------------------- */
+
+:root {
+  --paper: #f6f5f1;
+  --surface: #fffefb;
+  --surface-2: #efede6;
+  --ink: #16150f;
+  --ink-2: #5c5850;
+  --ink-3: #8b867c;
+  --rule: #e3e0d8;
+  --rule-strong: #cbc7bb;
+
+  /* one signal colour per microfrontend */
+  --org-host: #55606d;
+  --org-products: #a2521f;
+  --org-cart: #1f6f5c;
+
+  --ok: #1f6f5c;
+  --warn: #a2521f;
+
+  --sans: 'Instrument Sans', ui-sans-serif, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+
+  --r: 4px;
+  --gutter: 28px;
+  --ease: cubic-bezier(0.32, 0.72, 0.24, 1);
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --paper: #121210;
+  --surface: #1a1a17;
+  --surface-2: #22221e;
+  --ink: #f2f0ea;
+  --ink-2: #a8a49a;
+  --ink-3: #78746a;
+  --rule: #2b2b26;
+  --rule-strong: #3d3d36;
+
+  --org-host: #9aa5b1;
+  --org-products: #e08a4b;
+  --org-cart: #4fbfa3;
+
+  --ok: #4fbfa3;
+  --warn: #e08a4b;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink-2);
+  font: 400 15px/1.5 var(--sans);
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+h1 {
+  font-size: 30px;
+}
+h2 {
+  font-size: 19px;
+}
+h3 {
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+/* --- primitives ------------------------------------------------ */
+
+.label {
+  font: 500 10px/1 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s var(--ease),
+    border-color 0.15s var(--ease),
+    transform 0.15s var(--ease);
+}
+
+.btn:hover {
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn--primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.btn--primary:hover {
+  background: var(--ink);
+  opacity: 0.86;
+}
+
+.btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-2);
+}
+
+.btn--sm {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+:where(button, a, input):focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  flex: none;
+}
+
+.dot--idle {
+  background: var(--rule-strong);
+}
+.dot--warn {
+  background: var(--warn);
+}
+
+/* --- microfrontend boundary overlay ---------------------------- */
+/* Every app tags the DOM it owns with data-origin. Toggling
+   .boundaries on <html> makes ownership visible at runtime. */
+
+[data-origin] {
+  position: relative;
+}
+
+.boundaries [data-origin] {
+  outline: 1px dashed var(--org, var(--ink-3));
+  outline-offset: 6px;
+  border-radius: 2px;
+}
+
+.boundaries [data-origin]::after {
+  content: attr(data-origin);
+  position: absolute;
+  top: -7px;
+  left: 8px;
+  z-index: 5;
+  padding: 2px 6px;
+  border-radius: 2px;
+  background: var(--org, var(--ink-3));
+  color: var(--paper);
+  font: 500 9px/1 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+[data-origin='host'] {
+  --org: var(--org-host);
+}
+[data-origin='products'] {
+  --org: var(--org-products);
+}
+[data-origin='cart'] {
+  --org: var(--org-cart);
+}
+
+/* --- load-in ---------------------------------------------------- */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.4s var(--ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
