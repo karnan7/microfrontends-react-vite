@@ -184,11 +184,6 @@ jobs:
           VITE_CART_URL: /microfrontends-react-vite/cart
         run: npm run build
 
-      - name: SPA fallback for deep links
-        # /host/catalog is a client route with no file behind it. Pages serves
-        # 404.html for unmatched paths, so make that the app itself.
-        run: cp dist/index.html dist/404.html
-
       - name: Deploy
         if: ${{ github.event_name != 'pull_request' }}
         uses: peaceiris/actions-gh-pages@v4
@@ -198,14 +193,23 @@ jobs:
           destination_dir: host
           keep_files: true
 
-      - name: Build root landing redirect
+      - name: Assemble site root
         if: ${{ github.event_name != 'pull_request' }}
         working-directory: .
-        # The remotes have no page of their own worth visiting, so the site
-        # root forwards to the shell.
         run: |
-          mkdir -p root-redirect
-          cat > root-redirect/index.html <<'HTML'
+          mkdir -p site-root
+
+          # /host/catalog is a client route with no file behind it. Pages only
+          # honours a 404.html at the *site root* — it ignores host/404.html —
+          # so the shell's own index.html goes here. Its asset URLs are
+          # absolute (/microfrontends-react-vite/host/...), so the app boots
+          # from any unmatched path, and the router's basename turns
+          # /host/catalog back into the /catalog route.
+          cp host/dist/index.html site-root/404.html
+
+          # The remotes have no page of their own worth visiting, so the site
+          # root forwards to the shell.
+          cat > site-root/index.html <<'HTML'
           <!doctype html>
           <meta charset="utf-8">
           <title>microfrontends-react-vite</title>
@@ -213,10 +217,10 @@ jobs:
           <p><a href="./host/">Continue to the host shell</a></p>
           HTML
 
-      - name: Deploy root landing redirect
+      - name: Deploy site root
         if: ${{ github.event_name != 'pull_request' }}
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./root-redirect
+          publish_dir: ./site-root
           keep_files: true
